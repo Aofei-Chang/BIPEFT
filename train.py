@@ -281,9 +281,6 @@ def main(args):
 
     data_info = {"eval": eval_dataset['extra_fields'],
                  "test": test_dataset['extra_fields']}
-
-    # print("data infor", data_info)
-
     # split the dataset
     # if not args.for_baseline and args.using_darts:
     if not args.retrain and args.use_search:
@@ -333,18 +330,6 @@ def main(args):
             result.update(metric(decoded_preds, decoded_labels))
         return result
 
-    # # Training
-    # eff_batch_size = args.batch_size * args.accum_iter * misc.get_world_size()
-    #
-    # # if args.lr is None:  # only base_lr is specified
-    # args.lr = args.lr * eff_batch_size / 256
-    #
-    # print("base lr: %.2e" % (args.lr * 256 / eff_batch_size))
-    # print("actual lr: %.2e" % args.lr)
-    #
-    # print("accumulate grad iterations: %d" % args.accum_iter)
-    # print("effective batch size: %d" % eff_batch_size)
-
     optimizer = optim.AdamW(weights(model_without_ddp), lr=args.lr, weight_decay=args.weight_decay)
 
     max_step = args.epochs * len(train_dataloader)
@@ -359,10 +344,6 @@ def main(args):
         loss_scaler = scaler
     print("model weight optimizer: ", optimizer)
     model.to(device)
-    # if args.distributed:
-    #     print("gpu device: ", args.gpu)
-    #     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu], find_unused_parameters=True)
-    #     model_without_ddp = model.module
 
     print(f"Start training for {args.epochs} epochs")
     start_time = time.time()
@@ -385,7 +366,6 @@ def main(args):
                 num_params += p.numel()
         optimizer = optim.AdamW(weights(model), lr=args.lr, weight_decay=args.weight_decay)
         scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0, num_training_steps=max_step)
-        # num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
         all_num_params = sum(p.numel() for p in model.parameters())
         print(f"all params: {all_num_params}, trainable params: {num_params}")
 
@@ -396,9 +376,6 @@ def main(args):
         train_stats, ty, early_stop_flag = train_one_epoch(model, epoch, train_loader=train_dataloader, eval_loader=eval_dataloader,
                             scaler=scaler, test_loader=test_dataloader, args=args, architect=architect,
                             optimizer=optimizer, log_writer=log_writer, scheduler=scheduler)
-
-        # if scheduler is not None:
-        #     scheduler.step(epoch)
 
         log_stats = {**{f'train_{k}': v for k, v in train_stats.items()},
                      'epoch': epoch, }
@@ -411,7 +388,6 @@ def main(args):
 
         if (epoch % args.val_interval == 0) or epoch == args.epochs - 1:
             #change the dataloader for different testing
-            # if (args.mode == "search" or args.use_search) and not args.retrain:
             if args.use_search and not args.retrain:
                 model.finalize_arch()
                 print("finalize arch for search eval.")
@@ -439,9 +415,6 @@ def main(args):
             if args.output_dir:
                 with open(args.output_dir + "log.txt", "a") as f:
                     f.write(json.dumps(log_stats) + "\n")
-            #save ckpt
-            # if epoch == args.epochs - 1:
-            #     save_flag = True
             if args.output_dir and save_flag:
                 print(f"Save epoch {epoch} as checkpoint!")
                 arch_optimizer = None
@@ -459,12 +432,6 @@ def main(args):
         test_stats = evaluate(model, tokenizer=tokenizer, dataloader=test_dataloader, compute_metrics=compute_metrics, data_info=data_info['test'], args=args)
         length_test = len(test_dataset)
     else:
-        # test_stats = evaluate(model, tokenizer=tokenizer, dataloader=eval_dataloader, compute_metrics=compute_metrics, args=args)
-        # length_test = len(eval_dataset)
-        # print(f"{test_stats.keys()[0]} of the network on {length_test} validation data: {test_stats.items()[0]}")
-        # if args.use_search and not args.retrain:
-        #     model.finalize_arch()
-        #     print("finalize arch for search eval.")
         test_stats = evaluate(model, tokenizer=tokenizer, dataloader=test_dataloader, compute_metrics=compute_metrics, data_info=data_info['test'], args=args)
         length_test = len(test_dataset)
 
