@@ -42,8 +42,6 @@ def train_one_epoch(model, epoch, train_loader, eval_loader, optimizer, scaler,
     val_data_list = []
     if use_search and not retrain_mode:
         val_data_list = [i for i in eval_loader]
-    # if use_search and not retrain_mode:
-    #     train_loader = zip(train_loader, eval_loader)
     r = 0
     for data_iter_step, inputs in enumerate(
             metric_logger.log_every(train_loader, print_freq, header)):
@@ -58,9 +56,6 @@ def train_one_epoch(model, epoch, train_loader, eval_loader, optimizer, scaler,
         loss_search = None
 
         if use_search and not retrain_mode:
-            # examples_Search, labels_Search, example_mask_Search, images_Search, indicators_Search = next(val_iter)
-            # trn_input, val_input = inputs, next(val_iter)
-            # t1 = time.time()
             trn_input, val_input = inputs, val_data_list[r%len(val_data_list)]
             r += 1
 
@@ -71,24 +66,16 @@ def train_one_epoch(model, epoch, train_loader, eval_loader, optimizer, scaler,
             loss_search = architect.step(val_input,
                                          unrolled=False, epochs=epoch, data_iter_step=data_iter_step,
                                          accum_iter=accum_iter, epoch_step=data_iter_step, search_step=search_step)
-            # t2 = time.time()
-
-            # print(t2 - t1, "search step time")
         else:
             trn_input, val_input = inputs, None
-
-        # optimizer.zero_grad()
-        # ti1 = time.time()
         if (data_iter_step + 1) % accum_iter == 0:
             optimizer.zero_grad()
 
         trn_input['decoder_input_ids'] = model.t5_model._shift_right(trn_input['labels'])
         for k, v in trn_input.items():
             trn_input[k] = v.to(model.t5_model.device)
-        # f1 = time.time()
         outputs = model(x=trn_input, cur_epoch=epoch, main_forward=True)
-        # f2 = time.time()
-        # print("forward norm", f2-f1)
+
         if args.use_search:
             c_loss = outputs[0]
         else:
@@ -113,19 +100,11 @@ def train_one_epoch(model, epoch, train_loader, eval_loader, optimizer, scaler,
         loss = loss / accum_iter
         loss_scaler(loss, optimizer, parameters=weights(model),
                     update_grad=(data_iter_step + 1) % accum_iter == 0, clip_grad=args.clip_grad_norm)
-        # c_loss.backward()
-
-        # torch.nn.utils.clip_grad_norm_(
-        #     weights(model), args.clip_grad_norm)
         optimizer.step()
 
-        #prune
-        # if epoch >= args.prune_begin_epoch and model.early_stop:
         if model.early_stop:
-            model.prune_step(epoch)
+            model.prune_step(epoch) # here we accumulate the sensitivity and calculate the trigger at every step
 
-        # ti2 = time.time()
-        # print(ti2 - ti1, "normal time")
         if scheduler is not None:
             scheduler.step()
 

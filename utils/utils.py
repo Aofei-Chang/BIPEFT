@@ -15,11 +15,6 @@ def cosine_similarity(v1, v2):
     similarity = dot_product / (norm_v1 * norm_v2)
     return similarity
 
-def DSI_metric(weight_history):
-    # weight_history in shape [layers, modules, dims]
-    import torch
-    import torch.nn.functional as F
-
 
 def get_top_k_modules(DSI, top_k):
     """

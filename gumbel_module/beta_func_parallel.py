@@ -26,16 +26,6 @@ def bernoulli_sample(weights, temp=1, binary_mask=None, binary_prune_mask=None, 
 
 def gumbel_sample_weight(str_weights, temp=1., binary_mask=None, binary_prune_mask=None, dimension_search_mask=None, early_stop=False, dim_stage=False, no_gumbel=False):
 
-    #str_weights: size [layers, options, dims]
-
-    # binary_search_mask: freeze some positions in the binary stage progressively, dimension_search_mask in the dimension search stage
-    # gumbel_mask = binary_mask # shape: [self.num_encoder_layers, encoder_multi_num_per_layer]
-
-    # _, max_indices = torch.max(str_weights, dim=-1, keepdim=True)
-    # max_weights = torch.zeros_like(str_weights)
-    # max_weights.scatter_(dim=-1, index=max_indices, value=1)
-
-    # mask_dict, binary_search_dict, dimension_search_dict = None, None, None #mask dict is for binary mask, in the dimension search stage
     # if gumbel_mask is not None:
     #     possible_pos = gumbel_mask.shape[0]
     #     mask_dict = dict(zip(list(range(possible_pos)), gumbel_mask.tolist()))
@@ -58,28 +48,9 @@ def gumbel_sample_weight(str_weights, temp=1., binary_mask=None, binary_prune_ma
         weight_all = weight_all * binary_mask.unsqueeze(-1).cuda()
     return weight_all
 
-    # search_mask_dict = binary_search_dict if binary_search_dict is not None else dimension_search_dict
-    # if mask_dict is not None and mask_dict[0] == 0:
-    #     weights = torch.zeros_like(str_weights[0, :].view(1, -1))
-    # elif search_mask_dict is not None and search_mask_dict[0]:
-    #     weights = max_weights[0, :].view(1, -1)
-    # else:
-    #     weights = gumbel_sample(str_weights[0, :].view(1, -1), sample_time, temp=temp,
-    #                             flops_param=flops_param, GumbleSoftmax=GumbleSoftmax, use_beta=use_beta)
-    #
-    # for j in range(1, str_weights.shape[0]):
-    #     if mask_dict is not None and mask_dict[j] == 0:
-    #         weight_op = torch.zeros_like(str_weights[j, :].view(1, -1))
-    #     elif search_mask_dict is not None and search_mask_dict[j]:
-    #         weight_op = max_weights[j, :].view(1, -1)
-    #     else:
-    #         weight_op = gumbel_sample(str_weights[j, :].view(1, -1), sample_time,
-    #                                        temp=temp, flops_param=flops_param, GumbleSoftmax=GumbleSoftmax, use_beta=use_beta)
-    #
-    #     weights = torch.cat([weights, weight_op], 1)
 
 
-
+#old version, manual Gumbel-Softmax
 def gumbel_sample(str_weights, sample_time=1, temp=1., flops_param=None, GumbleSoftmax=None, use_beta=False):
     weight_size = str_weights.size()
     str_weights = str_weights.view(1, -1)
