@@ -20,7 +20,7 @@ from transformers import AutoTokenizer, set_seed
 from transformers.models.t5.modeling_t5 import T5Config, T5ForConditionalGeneration
 from transformers.optimization import get_linear_schedule_with_warmup
 
-from space.mom_s3delta import MoM_T5, weights
+from space.t5_search_space import MoM_T5, weights
 
 import utils.misc as misc
 from utils.misc import NativeScalerWithGradNormCount as NativeScaler

@@ -6,7 +6,7 @@ import time
 import utils.misc as misc
 import utils.lr_sched as lr_sched
 
-from lora.lora import weights
+from space.t5_search_space import weights
 
 
 def train_one_epoch(model, epoch, train_loader, eval_loader, optimizer, scaler,
